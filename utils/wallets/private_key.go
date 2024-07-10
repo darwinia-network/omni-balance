@@ -3,6 +3,14 @@ package wallets
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"omni-balance/utils/chains"
+	"omni-balance/utils/constant"
+	"omni-balance/utils/erc20"
+	"omni-balance/utils/error_types"
+	"omni-balance/utils/locks"
+	"strings"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,13 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
-	"log"
-	"omni-balance/utils/chains"
-	"omni-balance/utils/constant"
-	"omni-balance/utils/erc20"
-	"omni-balance/utils/error_types"
-	"omni-balance/utils/locks"
-	"strings"
 )
 
 func init() {
@@ -40,7 +41,7 @@ func NewPrivateKeyWallet(conf WalletConfig) *PrivateKeyWallet {
 		conf.Operator.PrivateKey == "" {
 		log.Fatalln("privateKey and operator.privateKey can not be empty")
 	}
-	if p.conf.Operator.Address.Cmp(constant.ZeroAddress) != 0 && p.conf.PrivateKey == "" {
+	if p.conf.Operator.Address.Cmp(constant.ZeroAddress) == 0 && p.conf.PrivateKey == "" {
 		log.Fatalln("privateKey can not be empty when operator.address is not empty")
 	}
 
@@ -147,6 +148,13 @@ func (p *PrivateKeyWallet) GetNonce(ctx context.Context, client simulated.Client
 	return client.NonceAt(ctx, p.GetAddress(true), nil)
 }
 
+func (p *PrivateKeyWallet) getPrivateKey() string {
+	if p.conf.Operator.Address.Cmp(constant.ZeroAddress) != 0 {
+		return p.conf.Operator.PrivateKey
+	}
+	return p.conf.PrivateKey
+}
+
 func (p *PrivateKeyWallet) SendTransaction(ctx context.Context, tx *types.LegacyTx,
 	client simulated.Client) (common.Hash, error) {
 	if tx.GasPrice == nil {
@@ -182,7 +190,7 @@ func (p *PrivateKeyWallet) SendTransaction(ctx context.Context, tx *types.Legacy
 	}
 
 	txData := types.NewTx(tx)
-	txData, err = chains.SignTx(txData, p.conf.PrivateKey, chainId.Int64())
+	txData, err = chains.SignTx(txData, p.getPrivateKey(), chainId.Int64())
 	if err != nil {
 		return common.Hash{}, errors.Wrap(err, "sign tx")
 	}

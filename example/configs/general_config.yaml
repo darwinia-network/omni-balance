@@ -1,0 +1,17 @@
+# Wallets configuration for monitoring purposes where direct operations on these addresses are not allowed.
+# All token operations like withdrawals or deposits will be executed through the associated operator address.
+wallets:
+  - address: 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257
+    # Private key for the wallet associated with the operator address for transaction signing.
+    privateKey: <0x9273283412f0A26C2cB99BBD874D54AD18540101_privateKey>
+    tokens:
+      # Configuration for triggering the gate_liquidity bot when the balance of a specific token at this address meets certain conditions.
+      - name: USDT
+        # Current amount of the token at the address.
+        amount: "1.5"
+        # Threshold amount; when the balance is less than or equal to this value, the gate_liquidity bot is activated.
+        threshold: "1"
+        # List of chains where the token balance is to be monitored.
+        chains:
+          - arbitrum
+          - polygon

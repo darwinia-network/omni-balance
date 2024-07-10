@@ -1,0 +1,27 @@
+# Wallets section for specifying monitored addresses which should not be directly operated on;
+# all token operations such as withdrawals or deposits will be conducted through the operator's address.
+wallets:
+  - address: 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257
+    operator:
+      # Actual address providing token liquidity.
+      address: 0x9273283412f0A26C2cB99BBD874D54AD18540101
+      # Configuration for when the operator's address is a multi-signature address.
+      # multiSignType: "safe"
+      # operator: 0x9273283412f0A26C2cB99BBD874D54AD18540101
+      # The private key corresponds to the operator's operator when the operator's address is a multi-signature address,
+      # and to the operator's address itself when it is a regular address.
+      privateKey: "<0x9273283412f0A26C2cB99BBD874D54AD18540101_privateKey>"
+    botTypes: 
+      # The botType 'helix_liquidity' is mandatory; when checking balances, it uses the on-chain balance plus any unclaimed Helix balance for evaluation.
+      - name: helix_liquidity
+        tokenChains: 
+          # The 'helix_liquidity' bot will only trigger if the token's chain matches the target chain ('toChain').
+          USDT: ["arbitrum"]
+    tokens:
+      # When the balance of this address for the specified token drops below or equals the configured threshold, the 'gate_liquidity' bot is activated.
+      - name: USDT
+        amount: "1.5"
+        threshold: "1"
+        # Specifies the chains to monitor for the token.
+        chains:
+          - arbitrum

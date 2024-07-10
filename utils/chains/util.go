@@ -206,7 +206,6 @@ type SendTokenParams struct {
 	Client        simulated.Client
 	Sender        common.Address
 	TokenAddress  common.Address
-	GetBalance    func(ctx context.Context, tokenAddress common.Address, decimals int32, client simulated.Client) (decimal.Decimal, error)
 	TokenDecimals int32
 	ToAddress     common.Address
 	AmountWei     decimal.Decimal

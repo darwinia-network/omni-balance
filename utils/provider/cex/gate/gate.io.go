@@ -73,6 +73,9 @@ func New(conf configs.Config, noInit ...bool) (provider.Provider, error) {
 }
 
 func (g *Gate) Swap(ctx context.Context, args provider.SwapParams) (provider.SwapResult, error) {
+	if args.Remark != "" {
+		return g.ProvideLiquidity(ctx, args)
+	}
 	var (
 		recordFn = func(s provider.SwapHistory, errs ...error) {
 			s.ProviderType = string(g.Type())
@@ -154,7 +157,7 @@ func (g *Gate) Swap(ctx context.Context, args provider.SwapParams) (provider.Swa
 			SetProviderType(g.Type()).
 			SetCurrentChain(args.SourceChain).
 			SetTx(args.LastHistory.Tx).
-			SetReciever(wallet.GetAddress(true).Hex())
+			SetReciever(wallet.GetAddress().Hex())
 		sh = &provider.SwapHistory{
 			ProviderName: g.Name(),
 			ProviderType: string(g.Type()),
@@ -309,7 +312,6 @@ func (g *Gate) GetCost(ctx context.Context, args provider.SwapParams) (provider.
 		return nil, error_types.ErrUnsupportedTokenAndChain
 	}
 
-	// 检查是否有余额
 	accounts, _, err := g.client.SpotApi.ListSpotAccounts(ctx, &gateapi.ListSpotAccountsOpts{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list spot accounts")
@@ -323,7 +325,7 @@ func (g *Gate) GetCost(ctx context.Context, args provider.SwapParams) (provider.
 		if strings.EqualFold(v.Currency, TokenName2GateTokenName(args.TargetToken)) {
 			continue
 		}
-		for _, tokenIn := range g.config.SourceToken {
+		for _, tokenIn := range g.config.SourceTokens {
 			if !strings.EqualFold(v.Currency, tokenIn.Name) {
 				continue
 			}

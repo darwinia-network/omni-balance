@@ -1,0 +1,20 @@
+wallets:
+  # Monitored addresses, but these cannot be operated on; all tokens will be withdrawn or deposited via the operator.address.
+  - address: 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257
+    # 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257 is a multisig address.
+    multiSignType: "safe"
+    operator:
+      # Real token liquidity provider address.
+      address: 0xcE23A33180e92AeF734d4287De40f04A8De36640
+      multiSignType: "safe"
+      operator: 0x9273283412f0A26C2cB99BBD874D54AD18540101
+      # Private key for operator.operator.
+      privateKey: "<0x9273283412f0A26C2cB99BBD874D54AD18540101_privateKey>"
+    tokens:
+      # When the balance of this address is less than or equal to this configuration, trigger the gate_liquidity bot.
+      - name: USDT
+        amount: "1.5"
+        threshold: "1"
+        # Chains that need to be monitored.
+        chains:
+          - arbitrum

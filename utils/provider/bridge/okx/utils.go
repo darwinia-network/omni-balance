@@ -155,7 +155,7 @@ func (o *OKX) GetBestTokenInChain(ctx context.Context, args provider.SwapParams)
 		}
 	}
 
-	for _, sourceToken := range o.conf.SourceToken {
+	for _, sourceToken := range o.conf.SourceTokens {
 		for _, v := range sourceToken.Chains {
 			if strings.EqualFold(v, args.TargetChain) && sourceToken.Name == args.TargetToken {
 				continue

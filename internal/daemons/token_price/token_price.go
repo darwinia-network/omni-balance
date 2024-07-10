@@ -16,7 +16,7 @@ import (
 
 func init() {
 	daemons.RegisterIntervalTask(daemons.Task{
-		Name:            "get_token_price_in_usdt",
+		Name:            "getTokenPriceInUsdt",
 		Description:     "Responsible for obtaining the token price, denominated in USDT.",
 		TaskFunc:        Run,
 		DefaultInterval: time.Minute * 3,
@@ -36,7 +36,7 @@ func Run(ctx context.Context, conf configs.Config) error {
 		go func(provider token_price.TokenPrice) {
 			defer utils.Recover()
 			defer w.Done()
-			result, err := provider.GetTokenPriceInUSDT(ctx, conf.SourceToken...)
+			result, err := provider.GetTokenPriceInUSDT(ctx, conf.SourceTokens...)
 			if err != nil {
 				logrus.Warnf("%s get token price error: %s", provider.Name(), err)
 				return

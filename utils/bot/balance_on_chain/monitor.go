@@ -34,7 +34,7 @@ func (b BalanceOnChain) Check(ctx context.Context, args bot.Params) ([]bot.Task,
 		})
 	)
 	token := config.GetTokenInfoOnChain(info.TokenName, args.Info.Chain)
-	balance, err := info.Wallet.GetBalance(ctx, common.HexToAddress(token.ContractAddress), token.Decimals, args.Client)
+	balance, err := info.Wallet.GetExternalBalance(ctx, common.HexToAddress(token.ContractAddress), token.Decimals, args.Client)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "get balance error")
 	}

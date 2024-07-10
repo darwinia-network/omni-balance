@@ -10,8 +10,7 @@ import (
 )
 
 func init() {
-	boc := HelixLiquidity{}
-	bot.Register(boc.Name(), boc)
+	bot.Register(HelixLiquidity{}.Name(), HelixLiquidity{})
 }
 
 type HelixLiquidity struct {

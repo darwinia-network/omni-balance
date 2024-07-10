@@ -11,9 +11,13 @@ import (
 )
 
 func CreateSwapParams(order models.Order, orderProcess models.OrderProcess, log *logrus.Entry, wallet wallets.Wallets) provider.SwapParams {
+	sourceChain := order.CurrentChainName
+	if order.SourceChainName != "" {
+		sourceChain = order.SourceChainName
+	}
 	return provider.SwapParams{
 		OrderId:     order.ID,
-		SourceChain: order.CurrentChainName,
+		SourceChain: sourceChain,
 		Sender:      wallet,
 		Receiver:    order.Wallet,
 		TargetChain: order.TargetChainName,
@@ -23,6 +27,7 @@ func CreateSwapParams(order models.Order, orderProcess models.OrderProcess, log 
 		LastHistory: createLastHistory(orderProcess),
 		RecordFn:    createRecordFunction(order, log),
 		Order:       order.Order,
+		Remark:      order.Remark,
 	}
 }
 

@@ -1,0 +1,28 @@
+wallets:
+  # Monitored addresses; however, these addresses cannot be directly operated upon. All token operations such as withdrawals or deposits will go through the `operator.address`.
+  - address: 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257
+    operator:
+      # Actual address providing token liquidity.
+      address: 0x9273283412f0A26C2cB99BBD874D54AD18540101
+      # Configuration when `operator.address` is a multisig address.
+      # multiSignType: "safe"
+      # operator: 0x9273283412f0A26C2cB99BBD874D54AD18540101
+      # When `operator.address` is a multisig address, `privateKey` refers to the private key of `operator.operator`. When `operator.address` is a standard address, `privateKey` is the private key of `operator.address`.
+      privateKey: "<0x9273283412f0A26C2cB99BBD874D54AD18540101_privateKey>"
+    botTypes: 
+      # This botType is mandatory.
+      - name: gate_liquidity
+        tokenChains: 
+          # The `gate_liquidity` bot will only trigger when the token's chain matches the destination chain (`toChain`).
+          USDT: ["arbitrum"]
+        config: 
+          # The destination chain for withdrawals must be specified.
+          toChain: "polygon"
+    tokens:
+      # When the balance of this address for a specific token falls below or equals the specified threshold, the `gate_liquidity` bot is triggered.
+      - name: USDT
+        amount: "1.5"
+        threshold: "1"
+        # Chains that require monitoring.
+        chains:
+          - arbitrum

@@ -39,25 +39,28 @@ const (
 )
 
 type Config struct {
-	Debug bool `json:"debug" yaml:"debug" comment:"Debug mode"`
+	Debug  bool   `json:"debug" yaml:"debug" comment:"Debug mode"`
+	ApiKey string `json:"api_key" yaml:"apiKey" comment:"API key"`
 
 	// Chains need to be monitored
 	Chains    []Chain `json:"chains" yaml:"chains" comment:"Chains"`
 	chainsMap map[string]Chain
 
-	// SourceToken used to buy other tokens
-	SourceToken    []SourceToken `json:"source_token" yaml:"source_token" comment:"Source token used to buy other tokens"`
-	sourceTokenMap map[string]SourceToken
+	// SourceTokens used to buy other tokens
+	SourceTokens    []SourceToken `json:"source_token" yaml:"sourceTokens" comment:"Source token used to buy other tokens"`
+	sourceTokensMap map[string]SourceToken
 
 	Providers    []Provider `json:"providers" yaml:"providers" comment:"providers"`
 	providersMap map[ProviderType][]Provider
 
 	Wallets []Wallet `json:"wallets" yaml:"wallets" comment:"Wallets need to rebalance"`
 	wallets map[string]Wallet
+	// walletBotConfigs: {wallet: {chainName: {tokenName: {botName: config}}}
+	walletBotConfigs map[string]map[string]map[string]map[string]BotConfigs `json:"-" yaml:"-"`
 
 	Db DbConfig `json:"db" yaml:"db" comment:"Database config"`
 
-	TaskInterval map[string]time.Duration `json:"task_interval" yaml:"task_interval"`
+	TaskInterval map[string]time.Duration `json:"task_interval" yaml:"taskInterval"`
 
 	Notice Notice `json:"notice" yaml:"notice" comment:"Notice config. When rebalance success, send notice"`
 }
@@ -72,47 +75,68 @@ type Chain struct {
 	Id           int      `json:"id" yaml:"id" comment:"Chain id"`
 	Name         string   `json:"name" yaml:"name" comment:"Chain name"`
 	NativeToken  string   `json:"native_token" comment:"Native token name, if not set, use the 0x0000000000000000000000000000000000000000"`
-	RpcEndpoints []string `json:"rpc_endpoints" yaml:"rpc_endpoints" comment:"RPC endpoints"`
+	RpcEndpoints []string `json:"rpc_endpoints" yaml:"rpcEndpoints" comment:"RPC endpoints"`
 	Tokens       []Token  `json:"tokens" yaml:"tokens" comment:"Tokens"`
 }
 
 type Wallet struct {
-	// BotTypes The type of monitoring, support: balance_on_chain, helix_liquidity, the default is balance_on_chain.
-	// If BotTypes is not empty and tokens.BotTypes is empty, then use BotTypes.
-	// If BotTypes is empty and tokens.BotTypes is not empty, then use tokens.BotTypes.
-	// If multiple types are set in BotTypes, multiple bots will be created according to the types.
-	BotTypes      []string      `json:"monitor_types" yaml:"botTypes" comment:"BotTypes The type of monitoring, support: balance_on_chain, helix_liquidity, the default is balance_on_chain.\n If BotTypes is not empty and tokens.BotTypes is empty, then use BotTypes.\n If BotTypes is empty and tokens.BotTypes is not empty, then use tokens.BotTypes.\n If multiple types are set in BotTypes, multiple bots will be created according to the types."`
+	// BotTypes The type of monitoring, support: balance_on_chain, helix_liquidity, gate_liquidity, the default is balance_on_chain.
+	BotTypes      []BotConfig   `json:"bot_types" yaml:"botTypes" comment:"BotTypes The type of monitoring, support: balance_on_chain, helix_liquidity, gate_liquidity, the default is balance_on_chain."`
 	Address       string        `json:"address" yaml:"address" comment:"Monitoring address"`
 	Operator      Operator      `json:"operator" yaml:"operator" comment:"Used to isolate the monitoring address and the operation address, preventing the leakage of the monitoring address private key. If Operator is empty, it is not enabled. If 'multi_sign_type' is not empty, 'address' is multi sign address, 'operator' is multi sign operator address."`
-	MultiSignType string        `json:"multi_sign_type" yaml:"multi_sign_type" comment:"multi sign address type, support: safe. If not empty, 'address' is multi sign address, 'operator' is multi sign operator address"`
+	MultiSignType string        `json:"multi_sign_type" yaml:"multiSignType" comment:"multi sign address type, support: safe. If not empty, 'address' is multi sign address, 'operator' is multi sign operator address"`
 	Tokens        []WalletToken `json:"tokens" yaml:"tokens" comment:"Tokens to be monitored"`
-	PrivateKey    string        `json:"private_key" yaml:"private_key" comment:"'address' private key. If 'operator' is not empty, private_key is the operator's private key"`
+	PrivateKey    string        `json:"private_key" yaml:"privateKey" comment:"'address' private key. If 'operator' is not empty, private_key is the operator's private key"`
+}
+
+type BotConfigs map[string]interface{}
+
+var (
+	needBotConfigs = map[string]bool{
+		"gate_liquidity": true,
+	}
+)
+
+type BotConfig struct {
+	// The name of the monitoring bot, default: "balance_on_chain", supports: "balance_on_chain", "helix_liquidity", and "gate_liquidity".
+	// balance_on_chain: balance on chain;
+	// helix_liquidity: The total of the balances on the chain and unclaimed balances of Helix;
+	// gate_liquidity: balance on chain, In the subsequent processing, the address will be used to recharge to the Gate exchange through the corresponding chain, and then withdraw from the Gate exchange to the target chain.
+	Name string `json:"name" yaml:"name" comment:"// The name of the monitoring bot, default: balance_on_chain, supports: balance_on_chain,helix_liquidity,gate_liquidity. balance_on_chain: balance on chain;helix_liquidity: The total of the balances on the chain and unclaimed balances of Helix;gate_liquidity: balance on chain, In the subsequent processing, the address will be used to recharge to the Gate exchange through the corresponding chain, and then withdraw from the Gate exchange to the target chain."`
+	// Take effect on the chains corresponding to those tokens, it is necessary to set the token name and the corresponding chain name, and there can be multiple chains.
+	// The key is the token name, and the value is the chain name. Example: {\"USDT\":[\"bsc\", \"heco\"]}
+	TokenChains map[string][]string `json:"token_chains" yaml:"tokenChains" comment:"Take effect on the chains corresponding to those tokens, it is necessary to set the token name and the corresponding chain name, and there can be multiple chains. The key is the token name, and the value is the chain name. Example: {\"USDT\":[\"bsc\", \"heco\"]}"`
+
+	// The corresponding configuration of the bot.
+	// balance_on_chain: empty
+	// helix_liquidity: empty
+	// gate_liquidity: {"toChain": "withdrawal to chain"}
+	Config BotConfigs `json:"config" yaml:"config" comment:"The corresponding configuration of the bot.balance_on_chain: empty;helix_liquidity: empty;gate_liquidity: {\"toChain\": \"<withdrawal to chain name, replace to the chain name.>\"}"`
 }
 
 type Operator struct {
 	// Address Operator address
 	Address       common.Address `json:"address" yaml:"address" comment:"Operator address"`
 	Operator      common.Address `json:"operator" yaml:"operator" comment:"Used to isolate the monitoring address and the operation address, preventing the leakage of the monitoring address private key. If Operator is empty, it is not enabled. If 'multi_sign_type' is not empty, 'address' is multi sign address, 'operator' is multi sign operator address"`
-	PrivateKey    string         `json:"private_key" yaml:"private_key" comment:"'address' private key. If 'operator' is not empty, private_key is the operator's private key"`
-	MultiSignType string         `json:"multi_sign_type" yaml:"multi_sign_type" comment:"MultiSign type, ex: safe"`
+	PrivateKey    string         `json:"private_key" yaml:"privateKey" comment:"'address' private key. If 'operator' is not empty, private_key is the operator's private key"`
+	MultiSignType string         `json:"multi_sign_type" yaml:"multiSignType" comment:"MultiSign type, ex: safe"`
 }
 
 type WalletToken struct {
-	Name      string              `json:"name" yaml:"name" comment:"Token name"`
-	Amount    decimal.Decimal     `json:"amount" yaml:"amount" comment:"The number of each rebalance"`
-	Threshold decimal.Decimal     `json:"threshold" yaml:"threshold" comment:"Threshold when the token balance is less than the threshold, the rebalance will be triggered"`
-	Chains    []string            `json:"chains" yaml:"chains" comment:"The chains need to be monitored"`
-	BotTypes  map[string][]string `json:"botTypes" yaml:"botTypes" comment:"BotTypes The monitoring type of this token on the specified chain, supporting balance_on_chain, helix_liquidity, and the default is balance_on_chain.\n The key is the chain name, and the value is the monitoring types on this chain.Example: {\"arbitrum\":[\"balance_on_chain\", \"helix_liquidity\"]}"`
+	Name      string          `json:"name" yaml:"name" comment:"Token name"`
+	Amount    decimal.Decimal `json:"amount" yaml:"amount" comment:"The number of each rebalance"`
+	Threshold decimal.Decimal `json:"threshold" yaml:"threshold" comment:"Threshold when the token balance is less than the threshold, the rebalance will be triggered"`
+	Chains    []string        `json:"chains" yaml:"chains" comment:"The chains need to be monitored"`
 }
 
 type CrossChain struct {
 	Providers   []string `json:"providers" yaml:"providers" comment:"use providers to cross chain"`
-	TargetChain string   `json:"target_chain" yaml:"target_chain" comment:"target chain name"`
+	TargetChain string   `json:"target_chain" yaml:"targetChain" comment:"target chain name"`
 }
 
 type Token struct {
 	Name            string `json:"name" yaml:"name" comment:"Token name"`
-	ContractAddress string `json:"contract_address" yaml:"contract_address" comment:"Token contract address"`
+	ContractAddress string `json:"contract_address" yaml:"contractAddress" comment:"Token contract address"`
 	// decimals token decimals
 	Decimals int32 `json:"decimals" yaml:"decimals" comment:"Token decimals"`
 }
@@ -193,8 +217,8 @@ func (c *Config) Init() *Config {
 		c.chainsMap[newName] = c.Chains[index]
 	}
 
-	c.sourceTokenMap = make(map[string]SourceToken)
-	for index, v := range c.SourceToken {
+	c.sourceTokensMap = make(map[string]SourceToken)
+	for index, v := range c.SourceTokens {
 		var chains []string
 		for _, v := range v.Chains {
 			if newName, ok := oldName2NewName[v]; ok {
@@ -203,8 +227,8 @@ func (c *Config) Init() *Config {
 			}
 			panic(fmt.Sprintf("chain %s not found", v))
 		}
-		c.SourceToken[index].Chains = chains
-		c.sourceTokenMap[v.Name] = c.SourceToken[index]
+		c.SourceTokens[index].Chains = chains
+		c.sourceTokensMap[v.Name] = c.SourceTokens[index]
 	}
 
 	c.providersMap = make(map[ProviderType][]Provider)
@@ -213,11 +237,46 @@ func (c *Config) Init() *Config {
 	}
 
 	c.wallets = make(map[string]Wallet)
+	c.walletBotConfigs = make(map[string]map[string]map[string]map[string]BotConfigs)
 	for walletIndex, v := range c.Wallets {
+		for index, botConfig := range v.BotTypes {
+			if len(botConfig.TokenChains) == 0 {
+				c.Wallets[walletIndex].BotTypes[index].TokenChains = make(map[string][]string)
+			}
+			if len(botConfig.Config) == 0 {
+				c.Wallets[walletIndex].BotTypes[index].Config = make(map[string]interface{})
+			}
+			if needBotConfigs[botConfig.Name] && len(botConfig.Config) == 0 {
+				panic(fmt.Sprintf("wallet %s bot config %s need config", v.Address, botConfig.Name))
+			}
+
+			for tokenName, chains := range botConfig.TokenChains {
+				var newChains []string
+				for _, name := range chains {
+					newName, ok := oldName2NewName[name]
+					if !ok {
+						panic(fmt.Sprintf("chain %s not found in chains configs", v))
+					}
+					walletAddress := strings.ToLower(v.Address)
+					if _, ok := c.walletBotConfigs[walletAddress]; !ok {
+						c.walletBotConfigs[walletAddress] = make(map[string]map[string]map[string]BotConfigs)
+					}
+					if _, ok := c.walletBotConfigs[walletAddress][newName]; !ok {
+						c.walletBotConfigs[walletAddress][newName] = make(map[string]map[string]BotConfigs)
+					}
+					if _, ok := c.walletBotConfigs[walletAddress][newName][tokenName]; !ok {
+						c.walletBotConfigs[walletAddress][newName][tokenName] = make(map[string]BotConfigs)
+					}
+					c.walletBotConfigs[walletAddress][newName][tokenName][botConfig.Name] = botConfig.Config
+					newChains = append(newChains, newName)
+				}
+				c.Wallets[walletIndex].BotTypes[index].TokenChains[tokenName] = newChains
+
+			}
+		}
 		for index, t := range v.Tokens {
 			var (
-				chains   []string
-				BotTypes = make(map[string][]string)
+				chains []string
 			)
 			for _, v := range t.Chains {
 				if newName, ok := oldName2NewName[v]; ok {
@@ -226,15 +285,7 @@ func (c *Config) Init() *Config {
 				}
 				panic(fmt.Sprintf("chain %s not found in chains configs", v))
 			}
-			for name := range t.BotTypes {
-				if newName, ok := oldName2NewName[name]; ok {
-					BotTypes[newName] = t.BotTypes[name]
-					continue
-				}
-				panic(fmt.Sprintf("chain %s not found", name))
-			}
 			c.Wallets[walletIndex].Tokens[index].Chains = chains
-			c.Wallets[walletIndex].Tokens[index].BotTypes = BotTypes
 		}
 		c.wallets[v.Address] = c.Wallets[walletIndex]
 	}
@@ -265,10 +316,10 @@ func (c *Config) Check() error {
 		}
 	}
 
-	if len(c.SourceToken) == 0 {
+	if len(c.SourceTokens) == 0 {
 		return errors.New("source_token must be set")
 	}
-	for index, v := range c.SourceToken {
+	for index, v := range c.SourceTokens {
 		for chainIndex, chain := range v.Chains {
 			if _, ok := c.chainsMap[chain]; !ok {
 				return errors.Errorf("source_token[%d]chainsMap[%d] not in chainsMap", index, chainIndex)
@@ -452,7 +503,7 @@ func (c *Config) GetTokenAddress(tokenName, chainName string) string {
 
 func (c *Config) GetSourceTokenNamesByChain(chainName string) []string {
 	var result []string
-	for _, v := range c.SourceToken {
+	for _, v := range c.SourceTokens {
 		if !utils.InArray(chainName, v.Chains) {
 			continue
 		}
@@ -498,4 +549,16 @@ func (c *Config) IsNativeToken(chainName, tokenName string) bool {
 		}
 	}
 	return false
+}
+
+func (c *Config) GetBotConfig(walletAddress, chainName, tokenName, botName string) BotConfigs {
+	return c.walletBotConfigs[strings.ToLower(walletAddress)][chainName][tokenName][botName]
+}
+
+func (c *Config) ListBotNames(walletAddress, chainName, TokenName string) []string {
+	var botNames []string
+	for botName := range c.walletBotConfigs[strings.ToLower(walletAddress)][chainName][TokenName] {
+		botNames = append(botNames, botName)
+	}
+	return botNames
 }

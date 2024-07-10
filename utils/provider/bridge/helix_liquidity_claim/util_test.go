@@ -74,7 +74,6 @@ func Test_encodeWithdrawLiquidity(t *testing.T) {
 							"arbitrum",
 							"polygon",
 						},
-						BotTypes: map[string][]string{},
 					},
 				},
 			},
@@ -141,8 +140,8 @@ func Test_ClaimBuildTx(t *testing.T) {
 		},
 		Wallets: []configs.Wallet{
 			{
-				BotTypes: []string{},
-				Address:  "0x000000000Bb6a011dB294ce3F3423f00EAc4959e",
+
+				Address: "0x000000000Bb6a011dB294ce3F3423f00EAc4959e",
 				Operator: configs.Operator{
 					Address:       common.HexToAddress("0x6dB77823ECa92dAcbbcfcC976dccF03370F22874"),
 					Operator:      common.HexToAddress("0xC5a809900B5BFb46B1B3892e419e69331B8FBC6c"),
@@ -158,7 +157,6 @@ func Test_ClaimBuildTx(t *testing.T) {
 							"arbitrum",
 							"polygon",
 						},
-						BotTypes: map[string][]string{},
 					},
 				},
 			},

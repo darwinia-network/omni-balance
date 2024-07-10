@@ -118,7 +118,7 @@ func (l Li) GetBestQuote(ctx context.Context, args provider.SwapParams) (tokenIn
 		return
 	}
 
-	for _, sourceToken := range l.conf.SourceToken {
+	for _, sourceToken := range l.conf.SourceTokens {
 		for _, v := range sourceToken.Chains {
 			if strings.EqualFold(v, args.TargetChain) && sourceToken.Name == args.TargetToken {
 				continue

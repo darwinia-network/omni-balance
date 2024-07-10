@@ -151,7 +151,7 @@ func (r Routernitro) GetBestQuote(ctx context.Context, args provider.SwapParams)
 		return
 	}
 
-	for _, sourceToken := range r.conf.SourceToken {
+	for _, sourceToken := range r.conf.SourceTokens {
 		for _, v := range sourceToken.Chains {
 			if strings.EqualFold(v, args.TargetChain) && sourceToken.Name == args.TargetToken {
 				continue

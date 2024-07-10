@@ -45,7 +45,7 @@ func (l Li) GetCost(ctx context.Context, args provider.SwapParams) (provider.Tok
 		return nil, error_types.ErrUnsupportedTokenAndChain
 	}
 	return provider.TokenInCosts{
-		{
+		provider.TokenInCost{
 			TokenName:  args.SourceToken,
 			CostAmount: costAmount,
 		},

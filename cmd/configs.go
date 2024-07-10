@@ -4,15 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/pkg/errors"
-	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
-	yaml_ncoder "github.com/zwgblue/yaml-encoder"
 	"net/http"
 	"omni-balance/internal/daemons"
 	"omni-balance/internal/db"
+	"omni-balance/internal/handler"
 	"omni-balance/internal/models"
 	"omni-balance/utils"
 	"omni-balance/utils/configs"
@@ -22,6 +17,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
+	yaml_ncoder "github.com/zwgblue/yaml-encoder"
 )
 
 var (
@@ -46,7 +48,14 @@ func startHttpServer(_ context.Context, port string) error {
 
 		setPlaceholderFinished <- struct{}{}
 	}))
+	http.Handle("/api/gate/liquidity", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		if !utils.IsFinishedInit() {
+			http.Error(w, "Not finished init", http.StatusInternalServerError)
+			return
+		}
+		handler.GateLiquidity(*config)(w, r)
+	}))
 	http.Handle("/remove_order", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if !strings.EqualFold(request.Method, http.MethodPost) {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -183,7 +192,7 @@ func CreateExampleConfig(exampleConfigPath string) error {
 				},
 			},
 		},
-		SourceToken: []configs.SourceToken{
+		SourceTokens: []configs.SourceToken{
 			{
 				Name:   "USDT",
 				Chains: []string{"etnereum", "arbitrum"},

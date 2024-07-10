@@ -120,7 +120,7 @@ func (b *Bridge) GetCost(ctx context.Context, args provider.SwapParams) (provide
 	}
 
 	return provider.TokenInCosts{
-		{
+		provider.TokenInCost{
 			TokenName:  args.SourceToken,
 			CostAmount: args.Amount,
 		},

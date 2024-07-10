@@ -2,12 +2,14 @@ package daemons
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"omni-balance/utils"
 	"omni-balance/utils/configs"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type TaskFunc func(ctx context.Context, conf configs.Config) error
@@ -74,8 +76,9 @@ func runForever(ctx context.Context, conf configs.Config, task Task) {
 	defer func() {
 		if err := recover(); err != nil {
 			logrus.Errorf("task %s failed, err: %v, will retry after 2s", task.Name, err)
+			debug.PrintStack()
 			time.Sleep(time.Second * 2)
-			go runForever(ctx, conf, task)
+			runForever(ctx, conf, task)
 		}
 	}()
 

@@ -6,12 +6,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 	"io"
 	"net/http"
 	"net/url"
+	"omni-balance/internal/actions"
 	"omni-balance/internal/daemons"
 	_ "omni-balance/internal/daemons/bot"
 	_ "omni-balance/internal/daemons/cross_chain"
@@ -35,6 +33,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -124,6 +126,49 @@ func main() {
 	app.Name = "omni-balance"
 	app.Action = Action
 	app.Commands = []*cli.Command{
+		{
+			Name:        "gate_liquidity",
+			Usage:       "Create an order for the liquidity of Gate.",
+			Description: "Create an order for the liquidity of Gate.",
+			Action:      actions.DoGateLiquidity,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "server",
+					Usage: "omni-balance server port",
+					Value: "http://127.0.0.1:8080",
+				},
+				&cli.StringFlag{
+					Name:     "apiKey",
+					Required: true,
+					Usage:    "omni-balance API key in config",
+				},
+				&cli.StringFlag{
+					Name:     "tokenName",
+					Required: true,
+					Usage:    "a token name must be in config",
+				},
+				&cli.StringFlag{
+					Name:     "fromChain",
+					Required: true,
+					Usage:    "deposit to the Gate exchange from that chain.",
+				},
+				&cli.StringFlag{
+					Name:     "toChain",
+					Required: true,
+					Usage:    "Withdraw to that chain from the Gate exchange.",
+				},
+				&cli.StringFlag{
+					Name:     "amount",
+					Required: true,
+					Usage:    "The number of tokens that need to be rebalanced.",
+				},
+				&cli.StringFlag{
+					Name:     "address",
+					Required: true,
+					Usage:    "Use that address to rebalance, and note that this address must exist in the configuration file.",
+				},
+			},
+		},
 		{
 			Name:  "del_order",
 			Usage: "delete order by id",

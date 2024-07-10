@@ -105,7 +105,6 @@ func Transfer(ctx context.Context, conf configs.Config, args SwapParams, client 
 		transaction, err := chains.BuildSendToken(ctx, chains.SendTokenParams{
 			Client:       client,
 			Sender:       args.Sender.GetAddress(true),
-			GetBalance:   args.Sender.GetBalance,
 			TokenAddress: common.HexToAddress(token.ContractAddress),
 			ToAddress:    common.HexToAddress(args.Receiver),
 			AmountWei:    decimal.NewFromBigInt(chains.EthToWei(args.Amount, token.Decimals), 0),

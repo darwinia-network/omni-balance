@@ -54,192 +54,191 @@ Omni Balance is an intelligent liquidity management tool designed to achieve sea
 #### Supported Commands
 
 ```sh
+USAGE:
+   omni-balance [global options] command [command options] 
+
 COMMANDS:
-   version, v  show version
-   list        list supported providers and docs
-   tasks       list supported tasks
-   example     create a example config file
-   help, h     Shows a list of commands or help for one command
+   gate_liquidity  Create an order for the liquidity of Gate.
+   del_order       delete order by id
+   version, v      show version
+   list            list supported providers and docs
+   tasks           list supported tasks
+   example         create a example config file
+   help, h         Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-
-    --conf value, -c value              (default: "./config.yaml")
+   
+    --conf value, -c value              (default: "./config.yaml")        
           config file path
-
-    --placeholder, -p                   (default: false)
-          enable placeholder, you can use placeholder to replace private key, Example: Fill '{{privateKey}}' in config.yaml. Run with -p to enable placeholder: SERVER_PORT=:8080 omni-balance -c ./config.yaml -p. Waiting for 'waiting for placeholder...' log, send placeholder
-          data according to the prompt.
-
-    --port value                        (default: ":8080")
+   
+    --placeholder, -p                   (default: false)                  
+          enable placeholder, you can use placeholder to replace private key, Example:
+          Fill '{{privateKey}}' in config.yaml.Run with -p to enable placeholder, Example:
+          SERVER_PORT=:8080
+          /var/folders/b9/kgdbsh096b76234g3nhxg2qh0000gn/T/go-build3443181796/b001/exe/cmd
+          -c ./config.yaml -pWaiting for 'waiting for placeholder...' log, send
+          placeholder data according to the prompt.
+   
+    --port value                        (default: ":8080")                
           When the placeholder parameter is set to true, you can specify and set the
           listening address of the HTTP server that receives the placeholder.
 
    MISC
-    --help, -h   show help
+
+   
+    --help, -h                          (default: false)                  
+          show help
 ```
 #### Configuration
+
+##### Example
+
+* [global_config.yaml](./example/global_config.yaml): A generic example configuration for global settings.
+* [gate_liquidity_config.yaml](./example/gate_liquidity_config.yaml): An example configuration for providing liquidity to the Gate.io exchange.
+* [general_config.yaml](./example/general_config.yaml): An example configuration for standard addresses swapping liquidity between two chains.
+* [helix_liquidity_config.yaml](./example/helix_liquidity_config.yaml): An example configuration that, when checking address balances, includes both on-chain balances and unclaimed HelixBridge balances for evaluation.
+* [operator_safe_config.yaml](./example/operator_safe_config.yaml): An example configuration for scenarios where the operator address utilizes a multi-signature setup.
+
+##### Configuration Reference
 ```
-# Debug mode
 debug: true
-# Chains
+apiKey: "999999999999"
+# All utilized blockchain networks along with their corresponding tokens must be defined here.
 chains:
-    - # Chain id
-      id: 1
-      # Chain name
-      name: etnereum
-      # Native token name, if not set, use the 0x0000000000000000000000000000000000000000
-      nativetoken: "ETH"
-      # RPC endpoints
-      rpc_endpoints:
-        - https://api.tatum.io/v3/blockchain/node/ethereum-mainnet
-        - https://ethereum-rpc.publicnode.com
-      # Tokens
-      tokens:
-        - # Token name
-          name: ETH
-          # Token contract address
-          contract_address: "0x0000000000000000000000000000000000000000"
-          # Token decimals
-          decimals: 18
-        - # Token name
-          name: RING
-          # Token contract address
-          contract_address: 0x9469D013805bFfB7D3DEBe5E7839237e535ec483
-          # Token decimals
-          decimals: 18
-        - # Token name
-          name: USDT
-          # Token contract address
-          contract_address: 0xdAC17F958D2ee523a2206206994597C13D831ec7
-          # Token decimals
-          decimals: 6
-    - # Chain id
-      id: 42161
-      # Chain name
-      name: arbitrum
-      # Native token name, if not set, use the 0x0000000000000000000000000000000000000000
-      nativetoken: "ETH"
-      # RPC endpoints
-      rpc_endpoints:
-        - https://1rpc.io/arb
-        - https://arbitrum.llamarpc.com
-      # Tokens
-      tokens:
-        - # Token name
-          name: ETH
-          # Token contract address
-          contract_address: "0x0000000000000000000000000000000000000000"
-          # Token decimals
-          decimals: 18
-        - # Token name
-          name: USDT
-          # Token contract address
-          contract_address: 0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9
-          # Token decimals
-          decimals: 6
-        - # Token name
-          name: RING
-          # Token contract address
-          contract_address: 0x9e523234D36973f9e38642886197D023C88e307e
-          # Token decimals
-          decimals: 18
-# Source token used to buy other tokens
-source_token:
-    - # Token name
-      name: USDT
-      # Chain name
-      chains:
-        - etnereum
-        - arbitrum
-    - # Token name
-      name: ETH
-      # Chain name
-      chains:
-        - etnereum
-        - arbitrum
-# Liquidity providers
-liquidity_providers:
-    - # Type liquidity provider type
-      type: CEX
-      # LiquidityName liquidity provider name
-      liquidity_name: gate.io
-      # Config liquidity provider config, depend on the type
-      config:
-        key: <gate_api_key>
-        secret: <gate_api_secret>
-    - # Type liquidity provider type
-      type: DEX
-      # LiquidityName liquidity provider name
-      liquidity_name: uniswap
-    - # Type liquidity provider type
-      type: Bridge
-      # LiquidityName liquidity provider name
-      liquidity_name: helixbridge
-    - # Type liquidity provider type
-      type: Bridge
-      # LiquidityName liquidity provider name
-      liquidity_name: darwinia-bridge
-# Wallets need to rebalance
-wallets:
-    - # Wallet address
-      address: 0x43Ef13E84D9992d1461a1f90CAc4653658CEA4FD
-      # If set, when the 'address' balance is insufficient, the operator address will be used to rebalance
-      operator: ""
-      # Tokens to be monitored
-      tokens:
-        - # Token name
-          name: ETH
-          # The number of each rebalance
-          amount: "1"
-          # Threshold when the token balance is less than the threshold, the rebalance will be triggered
-          threshold: "2"
-          # The chains need to be monitored
-          chains:
-            - ethereum
-      # Wallet private key. If operator is not empty, private_key is the operator's private key
-      private_key: <wallet1_private_key>
-    - # Wallet address
-      address: 0x43Ef13E84D9992d1461a1f90CAc4653658CEA4FD
-      # If set, when the 'address' balance is insufficient, the operator address will be used to rebalance
-      operator: "0x178D8546C5f78e01133858958355B06EC3406A1A"
-      # Tokens to be monitored
-      tokens:
-        - # Token name
-          name: RING
-          # The number of each rebalance
-          amount: "20000"
-          # Threshold when the token balance is less than the threshold, the rebalance will be triggered
-          threshold: "10000"
-          # The chains need to be monitored
-          chains:
-            - ethereum
-            - arbitrum
-      # Wallet private key. If operator is not empty, private_key is the operator's private key
-      private_key: <wallet2_private_key>
-# Database config, must set one of them
+  - id: 42161 # Chain ID
+    name: arbitrum # Chain name
+    nativeToken: "ETH" # Native token of the chain; if not provided, defaults to the token with contract address set to zero.
+    rpcEndpoints: # List of RPC endpoints; multiple entries can be specified, and requests will cycle through these.
+      - https://arb1.arbitrum.io/rpc
+      - https://arbitrum.llamarpc.com
+      - https://arb-mainnet-public.unifra.io
+      - https://arbitrum.rpc.subquery.network/public
+      - https://1rpc.io/arb
+    tokens: # All required tokens must be configured.
+      - name: ETH # Token name
+        contractAddress: "0x0000000000000000000000000000000000000000" # Token contract address
+        decimals: 18 # Token decimal places; must be specified.
+      - name: USDT
+        contractAddress: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+        decimals: 6
+      - name: RING
+        contractAddress: "0x9e523234D36973f9e38642886197D023C88e307e"
+        decimals: 18
+  - id: 137
+    name: polygon
+    nativeToken: "MATIC"
+    rpcEndpoints:
+      - https://polygon-rpc.com
+    tokens:
+      - name: MATIC
+        contractAddress: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      - name: USDT
+        contractAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+        decimals: 6
+  - id: 1
+    name: ethereum
+    nativeToken: "ETH"
+    rpcEndpoints:
+      - https://eth.llamarpc.com
+      - https://rpc.ankr.com/eth
+      - https://1rpc.io/eth
+      - https://ethereum-rpc.publicnode.com
+    tokens:
+      - name: ETH
+        contractAddress: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      - name: RING
+        contractAddress: 0x9469D013805bFfB7D3DEBe5E7839237e535ec483
+        decimals: 18
+  - id: 534352
+    name: scroll
+    nativeToken: "ETH"
+    rpcEndpoints:
+      - https://rpc.scroll.io
+      - https://scroll.drpc.org
+      - https://1rpc.io/scroll
+    tokens:
+      - name: ETH
+        contractAddress: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      - name: USDT
+        contractAddress: 0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df
+        decimals: 6
+
+# During rebalancing, tokens from the following configuration will be selected to determine the optimal route for swaps.
+sourceTokens:
+  - name: ETH # Token name, must match the token name in the 'chains' section.
+    chains: # On which chains this token can be used as a source token.
+      - arbitrum
+      - scroll
+      - ethereum
+  - name: USDT
+    chains:
+      - arbitrum
+      - scroll
+      - ethereum
+  - name: RING
+    chains:
+      - arbitrum
+      - ethereum
+
+# Providers that need to be enabled.
+providers:
+  - type: CEX
+    name: gate.io
+    config:
+      key: <gate_api_key>
+      secret: <gate_api_secret>
+  - type: DEX
+    name: uniswap
+  - type: Bridge
+    name: helixbridge
+    config: {}
+  - type: Bridge
+    name: darwinia-bridge
+  - type: Bridge
+    liquidityName: router_nitro
+    config: {}
+  - type: Bridge
+    liquidityName: okx
+    config:
+      apiKey: "xxxx"
+      secretKey: "xxxx"
+      passphrase: "xxxxx"
+      project: "xxxxx"
+
+# Database storage settings.
 db:
-    # MYSQL config
-    MYSQL:
-        host: ""
-        port: ""
-        user: ""
-        password: ""
-        database: ""
-    # POSTGRESQL config
-    POSTGRESQL:
-        host: ""
-        port: ""
-        user: ""
-        password: ""
-        database: ""
-    # SQLITE config
-    SQLITE:
-        path: /data/omni-balance.db
-task_interval:
-    cross_chain: 1m
-    get_token_price_in_usdt: 1m
-    monitor_wallet_balance: 1m
-    rebalance: 1m
+  type: SQLite # Database type; options include: MySQL, PostgreSQL, SQLite.
+  SQLITE: # SQLite configuration.
+    path: ./omni-balance.db
+
+# Task execution intervals.
+taskInterval:
+  crossChain: 30m # Interval for processing cross-chain order tasks.
+  getTokenPriceInUsdt: 30m # Interval for fetching token price tasks.
+  bot: 2m # Interval for running bot tasks, primarily for creating orders.
+  market: 2m # Interval for executing order tasks.
+
+
+# Wallets configuration for monitoring purposes where direct operations on these addresses are not allowed.
+# All token operations like withdrawals or deposits will be executed through the associated operator address.
+wallets:
+  - address: 0x888888c278443CFC4D6E60b1964c2F1BAc3Ef257
+    # Private key for the wallet associated with the operator address for transaction signing.
+    privateKey: <0x9273283412f0A26C2cB99BBD874D54AD18540101_privateKey>
+    tokens:
+      # Configuration for triggering the gate_liquidity bot when the balance of a specific token at this address meets certain conditions.
+      - name: USDT
+        # Current amount of the token at the address.
+        amount: "1.5"
+        # Threshold amount; when the balance is less than or equal to this value, the gate_liquidity bot is activated.
+        threshold: "1"
+        # List of chains where the token balance is to be monitored.
+        chains:
+          - arbitrum
+          - polygon
 ```
 
 #### Run

@@ -2,7 +2,7 @@
 .vscode
 local
 .run
-*.yaml
+./*.yaml
 omni-balance.db
 start.sh
 *.json

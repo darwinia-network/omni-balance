@@ -196,9 +196,7 @@ func processOrder(ctx context.Context, order models.Order, conf configs.Config) 
 		return errors.Wrap(err, "new evm client error")
 	}
 	defer client.Close()
-	if (wallet.IsDifferentAddress() || order.Status == models.OrderStatusWaitTransferFromOperator) &&
-		!utils.InArrayFold(order.Status.String(), []string{"", "direct"}) &&
-		!utils.InArrayFold(order.ProviderName, []string{"", "transfer"}) {
+	if wallet.IsDifferentAddress() && order.Status == models.OrderStatusWaitTransferFromOperator {
 		ok, err := transfer(ctx, order, args, conf, client)
 		if err != nil && ok {
 			return errors.Wrap(err, "transfer error")

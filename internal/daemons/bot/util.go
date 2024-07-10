@@ -44,11 +44,11 @@ func createOrder(ctx context.Context, tasks []bot.Task, processType bot.ProcessT
 	taskId = uuid.NewV4().String()
 
 	for _, v := range tasks {
-		d := db.DB().Where("wallet = ? and target_chain_name = ? and token_out_name = ? and status != ? and remark != ?",
+		d := db.DB().Where("wallet = ? and target_chain_name = ? and token_out_name = ? and status != ? and remark = ?",
 			v.Wallet, v.TokenOutChainName, v.TokenOutName, provider.TxStatusSuccess, v.Remark)
 		var count int64
-		if d.Model(&models.Order{}).Count(&count); count > 1 {
-			logrus.Warnf("wallet: %s, target_chain_name: %s, token_out_name: %s, status != success, remark: %s order count > 1 skip it",
+		if d.Model(&models.Order{}).Count(&count); count > 0 {
+			logrus.Debugf("wallet: %s, target_chain_name: %s, token_out_name: %s, status != success, remark: %s order count > 1 skip it",
 				v.Wallet, v.TokenOutChainName, v.TokenOutName, v.Remark)
 			continue
 		}

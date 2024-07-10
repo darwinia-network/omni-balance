@@ -2,8 +2,8 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"omni-balance/internal/daemons/market"
-	"omni-balance/utils"
 	"omni-balance/utils/bot"
 	"omni-balance/utils/chains"
 	"omni-balance/utils/configs"
@@ -47,25 +47,10 @@ func Run(ctx context.Context, conf configs.Config) error {
 					logrus.Debugf("ignore token %s on chain %s", token.Name, chainName)
 					continue
 				}
-				var botTypes []string
-				if len(token.BotTypes[chainName]) != 0 {
-					botTypes = append(botTypes, token.BotTypes[chainName]...)
-				}
-				if len(botTypes) == 0 {
-					for _, botType := range wallet.BotTypes {
-						if botType == "" || utils.InArrayFold(botType, botTypes) {
-							continue
-						}
-						botTypes = append(botTypes, botType)
-					}
-				}
+				var botTypes = conf.ListBotNames(wallet.Address, chainName, token.Name)
 
 				if len(botTypes) == 0 {
 					botTypes = append(botTypes, "balance_on_chain")
-				}
-
-				if !utils.InArray("helix_liquidity", botTypes) {
-					continue
 				}
 
 				for _, botType := range botTypes {
@@ -82,13 +67,16 @@ func Run(ctx context.Context, conf configs.Config) error {
 						if len(tasks) == 0 {
 							return
 						}
-						logrus.Infof("create %d tasks, based %s on %s using %s bot", len(tasks), tasks[0].TokenOutName,
-							tasks[0].TokenOutChainName, botType)
-						_, taskId, err := createOrder(ctx, tasks, processType)
+						orders, taskId, err := createOrder(ctx, tasks, processType)
 						if err != nil {
 							logrus.Errorf("create order error: %s", err)
 							return
 						}
+						if len(orders) == 0 {
+							return
+						}
+						logrus.Infof("create %d tasks, based %s on %s using %s bot", len(tasks), tasks[0].TokenOutName,
+							tasks[0].TokenOutChainName, botType)
 						market.PushTask(market.Task{
 							Id:          taskId,
 							ProcessType: processType,
@@ -102,9 +90,12 @@ func Run(ctx context.Context, conf configs.Config) error {
 	return nil
 }
 
-func process(ctx context.Context, conf configs.Config, walletAddress, tokenName, chainName, monitorType string,
+func process(ctx context.Context, conf configs.Config, walletAddress, tokenName, chainName, botType string,
 	client simulated.Client) func() ([]bot.Task, bot.ProcessType, error) {
-	m := bot.GetMonitor(monitorType)
+	m := bot.GetMonitor(botType)
+	if m == nil {
+		panic(fmt.Sprintf("%s botType not found", botType))
+	}
 	return func() ([]bot.Task, bot.ProcessType, error) {
 		return m.Check(ctx, bot.Params{
 			Conf: conf,

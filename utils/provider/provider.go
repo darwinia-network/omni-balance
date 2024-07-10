@@ -117,6 +117,7 @@ type SwapParams struct {
 	TargetChain string                             `json:"target_chain"`
 	Amount      decimal.Decimal                    `json:"amount"`
 	LastHistory SwapHistory                        `json:"last_history"`
+	Remark      string                             `json:"remark"`
 	RecordFn    func(s SwapHistory, errs ...error) `json:"-"`
 }
 
@@ -218,10 +219,11 @@ func (s SwapResult) MarshalOrder() []byte {
 }
 
 func (s SwapParams) GetLogs(name string) *logrus.Entry {
+	sender, _ := json.Marshal(s.Sender)
 	return logrus.WithFields(logrus.Fields{
 		"source_token": s.SourceToken,
 		"source_chain": s.SourceChain,
-		"sender":       s.Sender,
+		"sender":       string(sender),
 		"target_token": s.TargetToken,
 		"receiver":     s.Receiver,
 		"target_chain": s.TargetChain,

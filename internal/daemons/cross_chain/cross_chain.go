@@ -16,7 +16,7 @@ import (
 
 func init() {
 	daemons.RegisterIntervalTask(daemons.Task{
-		Name:            "cross_chain",
+		Name:            "crossChain",
 		TaskFunc:        Run,
 		DefaultInterval: time.Second * 3,
 		Description:     "Responsible for cross-chaining unfinished tokens from the Rebalance task to the target chain.",
