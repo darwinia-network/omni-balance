@@ -77,9 +77,8 @@ type Quote struct {
 		DataTx              []string        `json:"dataTx"`
 	} `json:"source"`
 	Destination struct {
-		ChainId   string `json:"chainId"`
-		ChainType string `json:"chainType"`
-		Asset     struct {
+		ChainId string `json:"chainId"`
+		Asset   struct {
 			Decimals       int    `json:"decimals"`
 			Symbol         string `json:"symbol"`
 			Name           string `json:"name"`
@@ -108,13 +107,7 @@ type Quote struct {
 			IsWrappedAsset bool   `json:"isWrappedAsset"`
 			IsReserveAsset bool   `json:"isReserveAsset"`
 		} `json:"stableReserveAsset"`
-		TokenAmount         decimal.Decimal `json:"tokenAmount"`
-		StableReserveAmount decimal.Decimal `json:"stableReserveAmount"`
-		PriceImpact         string          `json:"priceImpact"`
-		TokenPath           string          `json:"tokenPath"`
-		DataTx              []string        `json:"dataTx"`
-		Path                []string        `json:"path"`
-		Flags               []string        `json:"flags"`
+		TokenAmount decimal.Decimal `json:"tokenAmount"`
 	} `json:"destination"`
 	PartnerId         interface{} `json:"partnerId"`
 	SlippageTolerance interface{} `json:"slippageTolerance"`
@@ -145,9 +138,6 @@ func (q Quote) Error() error {
 	}
 	if q.FlowType == "" {
 		return errors.New("flowType is empty")
-	}
-	if q.BridgeFee.Symbol == "" {
-		return errors.New("bridgeFee.symbol is empty")
 	}
 	if q.Destination.Asset.Symbol == "" {
 		return errors.New("destination.asset.symbol is empty")
