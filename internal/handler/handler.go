@@ -91,6 +91,6 @@ func GateLiquidity(conf configs.Config) func(w http.ResponseWriter, r *http.Requ
 		})
 		logrus.Infof("create %s from %s to %s success", args.TokenName, args.FromChain, args.ToChain)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
+		_, _ = w.Write([]byte("success"))
 	})
 }
