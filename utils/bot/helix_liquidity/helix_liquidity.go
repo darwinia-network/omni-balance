@@ -3,7 +3,6 @@ package helix_liquidity
 import (
 	"context"
 	"omni-balance/utils/bot"
-	"omni-balance/utils/bot/balance_on_chain"
 	"omni-balance/utils/chains"
 	"omni-balance/utils/provider"
 	"omni-balance/utils/provider/bridge/helix_liquidity_claim"
