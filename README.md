@@ -93,11 +93,11 @@ GLOBAL OPTIONS:
 
 ##### Example
 
-* [global_config.yaml](./example/global_config.yaml): A generic example configuration for global settings.
-* [gate_liquidity_config.yaml](./example/gate_liquidity_config.yaml): An example configuration for providing liquidity to the Gate.io exchange.
-* [general_config.yaml](./example/general_config.yaml): An example configuration for standard addresses swapping liquidity between two chains.
-* [helix_liquidity_config.yaml](./example/helix_liquidity_config.yaml): An example configuration that, when checking address balances, includes both on-chain balances and unclaimed HelixBridge balances for evaluation.
-* [operator_safe_config.yaml](./example/operator_safe_config.yaml): An example configuration for scenarios where the operator address utilizes a multi-signature setup.
+* [global_config.yaml](./example/configs/global_config.yaml): A generic example configuration for global settings.
+* [gate_liquidity_config.yaml](./example/configs/gate_liquidity_config.yaml): An example configuration for providing liquidity to the Gate.io exchange.
+* [general_config.yaml](./example/configs/general_config.yaml): An example configuration for standard addresses swapping liquidity between two chains.
+* [helix_liquidity_config.yaml](./example/configs/helix_liquidity_config.yaml): An example configuration that, when checking address balances, includes both on-chain balances and unclaimed HelixBridge balances for evaluation.
+* [operator_safe_config.yaml](./example/configs/operator_safe_config.yaml): An example configuration for scenarios where the operator address utilizes a multi-signature setup.
 
 ##### Configuration Reference
 ```
