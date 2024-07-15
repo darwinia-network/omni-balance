@@ -1,20 +1,20 @@
 package bot
 
 var (
-	monitors map[string]Bot
+	bots map[string]Bot
 )
 
-func Register(name string, monitor Bot) {
-	if monitors == nil {
-		monitors = make(map[string]Bot)
+func Register(name string, bot Bot) {
+	if bots == nil {
+		bots = make(map[string]Bot)
 	}
-	monitors[name] = monitor
+	bots[name] = bot
 }
 
-func ListMonitors() map[string]Bot {
-	return monitors
+func ListBots() map[string]Bot {
+	return bots
 }
 
-func GetMonitor(name string) Bot {
-	return monitors[name]
+func GetBot(name string) Bot {
+	return bots[name]
 }

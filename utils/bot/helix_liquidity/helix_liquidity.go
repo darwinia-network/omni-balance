@@ -46,6 +46,7 @@ func (h HelixLiquidity) Check(ctx context.Context, args bot.Params) ([]bot.Task,
 	if err != nil {
 		return nil, bot.Parallel, err
 	}
+	log.Debugf("balance of %s is %s on chain", args.Info.Wallet.GetAddress(), balance)
 	threshold := args.Conf.GetTokenThreshold(args.Info.Wallet.GetAddress().Hex(), args.Info.TokenName, args.Info.Chain)
 	purchaseAmount := args.Conf.GetTokenPurchaseAmount(args.Info.Wallet.GetAddress().Hex(), args.Info.TokenName, args.Info.Chain)
 	var (
@@ -55,7 +56,24 @@ func (h HelixLiquidity) Check(ctx context.Context, args bot.Params) ([]bot.Task,
 	for _, v := range records {
 		total = total.Add(v.TotalAmount)
 	}
-	if !total.LessThanOrEqual(threshold) {
+	log.Debugf("total balance of %s is %s on chain plus need withdraw helix", args.Info.Wallet.GetAddress(), total)
+	for _, v := range debtImpl {
+		balance, err := v.BalanceOf(ctx, DebtParams{
+			Address: args.Info.Wallet.GetAddress(),
+			Chain:   args.Info.Chain,
+			Client:  client,
+			Token:   token.Name,
+		})
+		if err != nil {
+			log.Warnf("get balance of %s error: %s", v.Name(), err)
+			continue
+		}
+		total = total.Add(balance)
+	}
+
+	log.Debugf("total balance of %s is %s on chain plus need withdraw helix plus debt", args.Info.Wallet.GetAddress(), total)
+	if !total.GreaterThan(threshold) {
+		log.Debugf("total balance of %s is %s on chain plus need withdraw helix plus debt less than threshold, skip", args.Info.Wallet.GetAddress(), total)
 		return nil, bot.Parallel, nil
 	}
 

@@ -92,7 +92,7 @@ func Run(ctx context.Context, conf configs.Config) error {
 
 func process(ctx context.Context, conf configs.Config, walletAddress, tokenName, chainName, botType string,
 	client simulated.Client) func() ([]bot.Task, bot.ProcessType, error) {
-	m := bot.GetMonitor(botType)
+	m := bot.GetBot(botType)
 	if m == nil {
 		panic(fmt.Sprintf("%s botType not found", botType))
 	}
