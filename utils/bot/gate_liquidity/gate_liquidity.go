@@ -14,7 +14,7 @@ func init() {
 }
 
 type GateLiquidity struct {
-	balance_on_chain.BalanceOnChain
+	Bot bot.Bot
 }
 
 func (g GateLiquidity) Name() string {
@@ -22,7 +22,10 @@ func (g GateLiquidity) Name() string {
 }
 
 func (b GateLiquidity) Check(ctx context.Context, args bot.Params) ([]bot.Task, bot.ProcessType, error) {
-	tasks, processType, err := b.BalanceOnChain.Check(ctx, args)
+	if b.Bot == nil {
+		b.Bot = balance_on_chain.BalanceOnChain{}
+	}
+	tasks, processType, err := b.Bot.Check(ctx, args)
 	if err != nil {
 		return nil, processType, err
 	}

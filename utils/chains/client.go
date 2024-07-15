@@ -13,6 +13,10 @@ import (
 	"sync/atomic"
 )
 
+type MockClient interface {
+	simulated.Client
+}
+
 type Client struct {
 	index   atomic.Int64
 	clients []*ethclient.Client

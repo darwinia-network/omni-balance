@@ -2,6 +2,15 @@ package chains
 
 import (
 	"context"
+
+	"math/big"
+	"omni-balance/utils"
+	"omni-balance/utils/constant"
+	"omni-balance/utils/erc20"
+	"omni-balance/utils/error_types"
+	"strings"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,13 +21,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
-	"math/big"
-	"omni-balance/utils"
-	"omni-balance/utils/constant"
-	"omni-balance/utils/erc20"
-	"omni-balance/utils/error_types"
-	"strings"
-	"time"
 )
 
 func getDecimals(decimals ...int32) int32 {
@@ -63,6 +65,7 @@ func GetTokenBalance(ctx context.Context, client simulated.Client, tokenAddress,
 		}
 		return WeiToEth(balance, tokenDecimals), nil
 	}
+
 	erc20Abi, err := erc20.TokenMetaData.GetAbi()
 	if err != nil {
 		return decimal.Zero, errors.Wrap(err, "get erc20 abi error")

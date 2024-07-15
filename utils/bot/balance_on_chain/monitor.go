@@ -2,11 +2,12 @@ package balance_on_chain
 
 import (
 	"context"
+	"omni-balance/utils/bot"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"omni-balance/utils/bot"
 )
 
 func init() {

@@ -56,6 +56,18 @@ var (
 				},
 			},
 		},
+		constant.ArbitrumSepolia: AvaeConfig{
+			Chain: constant.ArbitrumSepolia,
+			DebtTokens: map[string]debtTokens{
+				"USDC": debtTokens{
+					Name:            "USDC",
+					AToken:          common.HexToAddress("0x460b97BD498E1157530AEb3086301d5225b91216"),
+					VToken:          common.HexToAddress("0x4fBE3A94C60A5085dA6a2D309965DcF34c36711d"),
+					UnderlyingToken: common.HexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"),
+					Decimals:        6,
+				},
+			},
+		},
 	}
 )
 
@@ -80,7 +92,7 @@ type Aave struct {
 
 func (a Aave) BalanceOf(ctx context.Context, args DebtParams) (decimal.Decimal, error) {
 	conf, ok := aaveAddressBook[args.Chain]
-	if !ok {
+	if !ok || conf.Chain == "" || conf.DebtTokens[args.Token].Name == "" {
 		return decimal.Zero, errors.Errorf("chain %s not support", args.Chain)
 	}
 	atokenBalance, err := chains.GetTokenBalance(ctx, args.Client, conf.DebtTokens[args.Token].AToken.Hex(),
@@ -88,6 +100,7 @@ func (a Aave) BalanceOf(ctx context.Context, args DebtParams) (decimal.Decimal, 
 	if err != nil {
 		return decimal.Zero, errors.Wrap(err, "get atoken balance error")
 	}
+
 	vtokenBalance, err := chains.GetTokenBalance(ctx, args.Client, conf.DebtTokens[args.Token].VToken.Hex(),
 		args.Address.Hex(), conf.DebtTokens[args.Token].Decimals)
 	if err != nil {
