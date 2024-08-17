@@ -30,13 +30,13 @@ func TestGateLiquidity_Check(t *testing.T) {
 			},
 		},
 		Wallets: []configs.Wallet{
-			configs.Wallet{
+			{
 				Address: constant.ZeroAddress.Hex(),
 				BotTypes: []configs.BotConfig{
 					{
 						Name: "gate_liquidity",
 						TokenChains: map[string][]string{
-							"ETH": []string{constant.Ethereum},
+							"ETH": {constant.Ethereum},
 						},
 						Config: map[string]interface{}{
 							"toChain": constant.Arbitrum,
@@ -44,7 +44,7 @@ func TestGateLiquidity_Check(t *testing.T) {
 					},
 				},
 				Tokens: []configs.WalletToken{
-					configs.WalletToken{
+					{
 
 						Name:      "ETH",
 						Amount:    decimal.RequireFromString("1"),
