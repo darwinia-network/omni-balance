@@ -26,8 +26,7 @@ import (
 )
 
 var (
-	pendingStatus   = "pending"
-	completedStatus = "completed"
+	pendingStatus = "pending"
 )
 
 type QuoteParams struct {
