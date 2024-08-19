@@ -252,7 +252,7 @@ func processOrder(ctx context.Context, order models.Order, conf configs.Config) 
 		return nil
 	}
 	if result.Status == "" {
-		return errors.New("the result status is empty")
+		return errors.Errorf("the result status is empty: %v", providerErr)
 	}
 	if result.CurrentChain != args.TargetChain && providerErr == nil {
 		result.Status = models.OrderStatusWaitCrossChain

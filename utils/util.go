@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"os"
 	"reflect"
 	"runtime/debug"
 	"strings"
@@ -292,4 +293,12 @@ func PadStringTo32Bytes(str string) []byte {
 		buffer.WriteString("\x00")
 	}
 	return buffer.Bytes()
+}
+
+func GetEnv(key string, defaultValue ...string) string {
+	value := os.Getenv(key)
+	if value == "" && len(defaultValue) > 0 {
+		return defaultValue[0]
+	}
+	return value
 }
