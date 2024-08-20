@@ -8,6 +8,7 @@ import (
 	"omni-balance/utils/error_types"
 	"omni-balance/utils/wallets"
 	"omni-balance/utils/wallets/dsafe"
+	"omni-balance/utils/wallets/mantle_safe"
 	"omni-balance/utils/wallets/safe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -53,6 +54,8 @@ func (m Multisig) getRealInstance(ctx context.Context) wallets.Wallets {
 	switch m.GetChainNameByCtx(ctx) {
 	case constant.DarwiniaDvm:
 		return dsafe.NewDsafe(m.conf)
+	case constant.Mantle:
+		return mantle_safe.NewMantleSafe(m.conf)
 	default:
 		return safe.NewSafe(m.conf)
 	}

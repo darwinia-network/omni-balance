@@ -1,4 +1,4 @@
-package dsafe
+package mantle_safe
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"omni-balance/utils"
 	"omni-balance/utils/chains"
 	"omni-balance/utils/constant"
-	apiclient "omni-balance/utils/safe_api/client"
 	"omni-balance/utils/wallets/safe"
 	"omni-balance/utils/wallets/safe/safe_abi"
 	"strings"
@@ -23,11 +22,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -175,39 +173,32 @@ type Info struct {
 	Version string `json:"version"`
 }
 
-func (s *Dsafe) GetDomainByCtx(ctx context.Context) string {
-	return constant.DarwiniaDvm
+func (s *MantleSafe) GetDomainByCtx(ctx context.Context) string {
+	return constant.Mantle
 }
 
-func (s *Dsafe) GetChainIdByCtx(ctx context.Context) int {
+func (s *MantleSafe) GetChainIdByCtx(ctx context.Context) int {
 	return constant.GetChainId(s.GetDomainByCtx(ctx))
 }
 
-func (s *Dsafe) safeWalletInfo(ctx context.Context) (*Info, error) {
+func (s *MantleSafe) safeWalletInfo(ctx context.Context) (*Info, error) {
 	var address = s.getOperatorSafeAddress().Hex()
 	var result = new(Info)
-	u := fmt.Sprintf("https://dsafe.dcdao.box/cgw/v1/chains/46/safes/%s", address)
+	u := fmt.Sprintf("https://gateway.multisig.mantle.xyz/v1/chains/5000/safes/%s", address)
 	if err := utils.Request(ctx, "GET", u, nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *Dsafe) Client(ctx context.Context) *apiclient.SafeTransactionServiceAPI {
-	c := httptransport.New(
-		s.GetDomainByCtx(ctx), apiclient.DefaultBasePath, apiclient.DefaultSchemes)
-	c.Context = ctx
-	return apiclient.New(c, strfmt.Default)
-}
-
-func (s *Dsafe) Transfer(ctx context.Context, tx *types.LegacyTx, client simulated.Client) (common.Hash, error) {
+func (s *MantleSafe) Transfer(ctx context.Context, tx *types.LegacyTx, client simulated.Client) (common.Hash, error) {
 	if s.operatorSafe != nil {
 		return s.operatorSafe.SendTransaction(ctx, tx, client)
 	}
 	return chains.SendTransaction(ctx, client, tx, s.GetAddress(true), s.conf.Operator.PrivateKey)
 }
 
-func (s *Dsafe) MultisigTransaction(ctx context.Context, tx *types.LegacyTx, client simulated.Client) (common.Hash, error) {
+func (s *MantleSafe) MultisigTransaction(ctx context.Context, tx *types.LegacyTx, client simulated.Client) (common.Hash, error) {
 	if tx.Nonce == 0 {
 		nonce, err := s.nonce(ctx)
 		if err != nil {
@@ -257,29 +248,29 @@ func (s *Dsafe) MultisigTransaction(ctx context.Context, tx *types.LegacyTx, cli
 	return safeTxHash, s.ExecTransaction(ctx, txInfo, client)
 }
 
-func (s *Dsafe) getOperatorSafeAddress() common.Address {
+func (s *MantleSafe) getOperatorSafeAddress() common.Address {
 	if s.conf.Operator.MultiSignType != "" {
 		return s.conf.Operator.Address
 	}
 	return s.conf.Address
 }
 
-func (s *Dsafe) getOperatorAddress() common.Address {
+func (s *MantleSafe) getOperatorAddress() common.Address {
 	if s.conf.Operator.MultiSignType != "" {
 		return s.conf.Operator.Operator
 	}
 	return s.conf.Operator.Address
 }
 
-func (s *Dsafe) nonce(ctx context.Context) (int64, error) {
-	u := fmt.Sprintf("https://dsafe.dcdao.box/cgw/v1/chains/46/safes/%s/nonces", s.getOperatorSafeAddress().Hex())
+func (s *MantleSafe) nonce(ctx context.Context) (int64, error) {
+	u := fmt.Sprintf("https://gateway.multisig.mantle.xyz/v1/chains/5000/safes/%s/nonces", s.getOperatorSafeAddress().Hex())
 	var dest = struct {
 		RecommendedNonce int64 `json:"recommendedNonce"`
 	}{}
 	return dest.RecommendedNonce, utils.Request(ctx, "GET", u, nil, &dest)
 }
 
-func (s *Dsafe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (common.Hash, error) {
+func (s *MantleSafe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (common.Hash, error) {
 	safeGlobalLocker.Lock()
 	defer safeGlobalLocker.Unlock()
 	nonce, err := s.nonce(ctx)
@@ -298,6 +289,7 @@ func (s *Dsafe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (com
 	}
 
 	typedData := s.eip712(ctx, *t)
+
 	var safeTxHash string
 	sigData, err := chains.SignTypedData(typedData, func(msg []byte) (sig []byte, err error) {
 		safeTxHash = common.Bytes2Hex(msg)
@@ -313,7 +305,7 @@ func (s *Dsafe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (com
 	txData, err := json.Marshal(ProposeTransaction{
 		To:             t.To.Hex(),
 		Value:          t.Value.String(),
-		Data:           t.Data,
+		Data:           "0x" + t.Data,
 		BaseGas:        "0",
 		GasPrice:       "0",
 		GasToken:       constant.ZeroAddress.Hex(),
@@ -328,24 +320,23 @@ func (s *Dsafe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (com
 		return common.Hash{}, errors.Wrap(err, "marshal transaction error")
 	}
 
-	var result SafeResp
-	err = utils.Request(
+	data, err := utils.RequestBinary(
 		ctx, "POST",
-		fmt.Sprintf("https://dsafe.dcdao.box/cgw/v1/chains/46/transactions/%s/propose", s.getOperatorSafeAddress().Hex()),
-		bytes.NewReader(txData),
-		&result)
+		fmt.Sprintf("https://gateway.multisig.mantle.xyz/v1/chains/5000/transactions/%s/propose", s.GetAddress(true).Hex()),
+		bytes.NewReader(txData))
 	if err != nil {
 		return common.Hash{}, nil
 	}
-
-	if result.Message != "" {
-		return common.Hash{}, errors.New(result.Message)
+	result := gjson.ParseBytes(data)
+	if result.Get("statusCode").Int() != 0 || result.Get("code").Int() != 0 {
+		return common.Hash{}, errors.New(result.Get("message").String())
 	}
+
 	return common.HexToHash(fmt.Sprintf("0x%s", safeTxHash)), nil
 }
 
-func (s *Dsafe) GetMultiSigTransaction(ctx context.Context, safeTxHash common.Hash) (Transaction, error) {
-	u := fmt.Sprintf("https://dsafe.dcdao.box/cgw/v1/chains/46/transactions/multisig_%s_%s", s.getOperatorSafeAddress().Hex(), safeTxHash.Hex())
+func (s *MantleSafe) GetMultiSigTransaction(ctx context.Context, safeTxHash common.Hash) (Transaction, error) {
+	u := fmt.Sprintf("https://gateway.multisig.mantle.xyz/v1/chains/5000/transactions/multisig_%s_%s", s.getOperatorSafeAddress().Hex(), safeTxHash.Hex())
 	var result Transaction
 	if err := utils.Request(ctx, "GET", u, nil, &result); err != nil {
 		return result, errors.Wrap(err, "get multisig transaction error")
@@ -356,7 +347,7 @@ func (s *Dsafe) GetMultiSigTransaction(ctx context.Context, safeTxHash common.Ha
 	return result, nil
 }
 
-func (s *Dsafe) ExecTransaction(ctx context.Context, tx Transaction, client simulated.Client) error {
+func (s *MantleSafe) ExecTransaction(ctx context.Context, tx Transaction, client simulated.Client) error {
 	abi, err := safe_abi.SafeAbiMetaData.GetAbi()
 	if err != nil {
 		return errors.Wrap(err, "get abi error")
@@ -459,7 +450,7 @@ func (s *Dsafe) ExecTransaction(ctx context.Context, tx Transaction, client simu
 	return client.SendTransaction(ctx, signTx)
 }
 
-func (s *Dsafe) eip712(ctx context.Context, t safe.Transaction) apitypes.TypedData {
+func (s *MantleSafe) eip712(ctx context.Context, t safe.Transaction) apitypes.TypedData {
 	return apitypes.TypedData{
 		Types: apitypes.Types{
 			"EIP712Domain": []apitypes.Type{
@@ -488,13 +479,13 @@ func (s *Dsafe) eip712(ctx context.Context, t safe.Transaction) apitypes.TypedDa
 			"to":             t.To.Hex(),
 			"value":          t.Value.BigInt(),
 			"data":           common.Hex2Bytes(t.Data),
-			"operation":      math.NewHexOrDecimal256(int64(t.Operation)),
-			"baseGas":        math.NewHexOrDecimal256(t.BaseGas.IntPart()),
-			"gasPrice":       math.NewHexOrDecimal256(t.GasPrice.IntPart()),
+			"operation":      big.NewInt(int64(t.Operation)),
+			"baseGas":        t.BaseGas.BigInt(),
+			"gasPrice":       t.GasPrice.BigInt(),
 			"gasToken":       t.GasToken.Hex(),
 			"refundReceiver": t.RefundReceiver.Hex(),
-			"nonce":          math.NewHexOrDecimal256(int64(t.Nonce)),
-			"safeTxGas":      math.NewHexOrDecimal256(t.SafeTxGas.IntPart()),
+			"nonce":          big.NewInt(int64(t.Nonce)),
+			"safeTxGas":      t.SafeTxGas.BigInt(),
 		},
 	}
 }
