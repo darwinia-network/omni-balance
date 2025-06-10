@@ -37,6 +37,7 @@ func CreateSwapParams(order models.Order, orderProcess models.OrderProcess, wall
 		Amount:           order.Amount,
 		LastHistory:      createLastHistory(orderProcess),
 		RecordFn:         createRecordFunction(order),
+		SaveOrderFn:      createSaveOrderFunction(order),
 		Order:            order.Order,
 		Remark:           order.Remark,
 		CurrentBalance:   order.CurrentBalance,
@@ -50,6 +51,12 @@ func createLastHistory(orderProcess models.OrderProcess) provider.SwapHistory {
 		CurrentChain: orderProcess.CurrentChainName,
 		Amount:       orderProcess.Amount,
 		Tx:           orderProcess.Tx,
+	}
+}
+
+func createSaveOrderFunction(order models.Order) func(update map[string]interface{}) {
+	return func(update map[string]interface{}) {
+		db.DB().Model(&models.Order{}).Where("id = ?", order.ID).Updates(update)
 	}
 }
 

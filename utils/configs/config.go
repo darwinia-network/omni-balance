@@ -56,6 +56,7 @@ func (m Mode) IsSwap() bool {
 }
 
 type Config struct {
+	Debug  bool   `json:"debug" yaml:"debug" comment:"Debug mode"`
 	ApiKey string `json:"api_key" yaml:"apiKey" comment:"API key"`
 
 	// Chains need to be monitored
@@ -88,6 +89,7 @@ type Notice struct {
 }
 
 type Chain struct {
+	IsCex        bool     `json:"is_cex" yaml:"isCex" comment:"Is cex chain"`
 	Id           int      `json:"id" yaml:"id" comment:"Chain id"`
 	Name         string   `json:"name" yaml:"name" comment:"Chain name"`
 	NativeToken  string   `json:"native_token" comment:"Native token name, if not set, use the 0x0000000000000000000000000000000000000000"`
@@ -226,8 +228,11 @@ func (c *Config) Init() *Config {
 
 	for index, v := range c.Chains {
 		newName := constant.GetChainName(v.Id)
-		if newName == "" {
+		if newName == "" && !v.IsCex {
 			panic(fmt.Sprintf("chain id %d not found", v.Id))
+		}
+		if v.IsCex && newName == "" {
+			newName = v.Name
 		}
 		oldName2NewName[v.Name] = newName
 		c.Chains[index].Name = newName
@@ -440,7 +445,7 @@ func (c *Config) GetProvidersConfig(name string, providerType ProviderType, dest
 func (c *Config) GetChainConfig(chainName string) Chain {
 	chain := c.chainsMap[chainName]
 	if chain.Name == "" {
-		log.Fatalf("chain %s not found, config: %+v", chainName, c.chainsMap)
+		panic(fmt.Sprintf("chain %s not found, config: %+v", chainName, c.chainsMap))
 	}
 	return chain
 }
@@ -552,6 +557,15 @@ func (c *Config) GetSourceTokenNamesByChain(chainName string) []string {
 	return result
 }
 
+func (c *Config) ChainExists(chainName string) bool {
+	for _, v := range c.Chains {
+		if strings.EqualFold(v.Name, chainName) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Config) GetSourceTokenNamesByChainNil(chainName string) []string {
 	var result []string
 	for _, v := range c.SourceTokens {
@@ -612,4 +626,15 @@ func (c *Config) ListBotNames(walletAddress, chainName, TokenName string) []stri
 		botNames = append(botNames, botName)
 	}
 	return botNames
+}
+
+func (c *Config) GetBotConfigUnderWallet(walletAddress, botName string) BotConfigs {
+	wallet := c.GetWalletConfig(walletAddress)
+	for _, v := range wallet.BotTypes {
+		if v.Name != botName {
+			continue
+		}
+		return v.Config
+	}
+	return nil
 }

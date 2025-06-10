@@ -34,7 +34,7 @@ func (l Level) String() string {
 func SetLevel(l Level) {
 	currentLevel = l
 	if currentLevel == LevelDebug {
-		logger.SetFlags(log.LstdFlags | log.Llongfile)
+		logger.SetFlags(log.LstdFlags | log.Lshortfile)
 	} else {
 		logger.SetFlags(log.LstdFlags)
 	}

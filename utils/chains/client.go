@@ -2,6 +2,7 @@ package chains
 
 import (
 	"context"
+	"io"
 	"log"
 	"math/big"
 	"os"
@@ -61,7 +62,9 @@ func needTry(err error) bool {
 	}
 	return strings.Contains(err.Error(), "connection refused") ||
 		strings.Contains(err.Error(), "no such host") ||
-		strings.Contains(err.Error(), "i/o timeout")
+		strings.Contains(err.Error(), "i/o timeout") ||
+		errors.Is(err, io.EOF)
+
 }
 
 func NewTryClient(ctx context.Context, endpoints []string) (*Client, error) {

@@ -41,7 +41,7 @@ type SafeInfoResponse struct {
 
 	// Nonce
 	// Required: true
-	Nonce *int64 `json:"nonce"`
+	Nonce *string `json:"nonce"`
 
 	// owners
 	// Required: true

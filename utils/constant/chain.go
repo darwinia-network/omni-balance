@@ -1,6 +1,10 @@
 package constant
 
-import "golang.org/x/exp/constraints"
+import (
+	"strings"
+
+	"golang.org/x/exp/constraints"
+)
 
 const (
 	Arbitrum        = "arbitrum"
@@ -100,4 +104,15 @@ func GetChainName[t constraints.Integer](chainId t) string {
 
 func GetChainId(chainName string) int {
 	return chainName2Id[chainName]
+}
+
+func ConvertChainName(chainName string) string {
+	chains := map[string]string{
+		"eth":      Ethereum,
+		"arbitrum": Arbitrum,
+	}
+	if v, ok := chains[strings.ToLower(chainName)]; ok {
+		return v
+	}
+	return chainName
 }

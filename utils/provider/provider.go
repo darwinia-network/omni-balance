@@ -106,20 +106,21 @@ type BalanceParams struct {
 }
 
 type SwapParams struct {
-	Order            datatypes.JSON                     `json:"order"`
-	OrderId          uint                               `json:"order_id"`
-	SourceToken      string                             `json:"source_token"`
-	SourceChain      string                             `json:"source_chain"`
-	SourceChainNames []string                           `json:"source_chain_names"`
-	Sender           wallets.Wallets                    `json:"sender"`
-	TargetToken      string                             `json:"target_token"`
-	Receiver         string                             `json:"receiver"`
-	TargetChain      string                             `json:"target_chain"`
-	Amount           decimal.Decimal                    `json:"amount"`
-	LastHistory      SwapHistory                        `json:"last_history"`
-	Remark           string                             `json:"remark"`
-	RecordFn         func(s SwapHistory, errs ...error) `json:"-"`
-	CurrentBalance   decimal.Decimal                    `json:"current_balance"`
+	Order            datatypes.JSON                      `json:"order"`
+	OrderId          uint                                `json:"order_id"`
+	SourceToken      string                              `json:"source_token"`
+	SourceChain      string                              `json:"source_chain"`
+	SourceChainNames []string                            `json:"source_chain_names"`
+	Sender           wallets.Wallets                     `json:"sender"`
+	TargetToken      string                              `json:"target_token"`
+	Receiver         string                              `json:"receiver"`
+	TargetChain      string                              `json:"target_chain"`
+	Amount           decimal.Decimal                     `json:"amount"`
+	LastHistory      SwapHistory                         `json:"last_history"`
+	Remark           string                              `json:"remark"`
+	RecordFn         func(s SwapHistory, errs ...error)  `json:"-"`
+	SaveOrderFn      func(update map[string]interface{}) `json:"-"`
+	CurrentBalance   decimal.Decimal                     `json:"current_balance"`
 }
 
 type SwapResult struct {
@@ -199,6 +200,11 @@ func (s *SwapResult) SetTx(tx string) *SwapResult {
 
 func (s *SwapResult) Out() SwapResult {
 	return *s
+}
+func (s *SwapResult) OutError(err error) (SwapResult, error) {
+	s.Error = err.Error()
+	s.Status = TxStatusFailed
+	return *s, err
 }
 
 func (s SwapResult) Marshal() map[string]interface{} {

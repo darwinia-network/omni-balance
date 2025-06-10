@@ -21,6 +21,7 @@ import (
 	_ "omni-balance/utils/provider/bridge/li"
 	_ "omni-balance/utils/provider/bridge/okx"
 	_ "omni-balance/utils/provider/bridge/routernitro"
+	_ "omni-balance/utils/provider/cex/binance"
 	_ "omni-balance/utils/provider/cex/gate"
 	_ "omni-balance/utils/provider/dex/uniswap"
 	_ "omni-balance/utils/wallets/multisig"
@@ -68,6 +69,11 @@ func Usage(_ *cli.Context) error {
 func Action(cli *cli.Context) error {
 	if err := initConfig(ctx, cli.Bool("placeholder"), cli.String("conf"), cli.String("port")); err != nil {
 		return errors.Wrap(err, "init config")
+	}
+	log.Infof("init config success")
+	log.SetLevel(log.LevelInfo)
+	if config.Debug {
+		log.SetLevel(log.LevelDebug)
 	}
 	if version != "" && commitTime != "" {
 		log.Infof("version: %s, commit: %s, commitTime: %s", version, commitMessage, commitTime)

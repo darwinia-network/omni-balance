@@ -3,6 +3,7 @@ package bot
 import (
 	"omni-balance/internal/daemons"
 	_ "omni-balance/utils/bot/balance_on_chain"
+	_ "omni-balance/utils/bot/binance_liquidity"
 	_ "omni-balance/utils/bot/gate_liquidity"
 	_ "omni-balance/utils/bot/helix_liquidity"
 	"time"

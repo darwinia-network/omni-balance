@@ -133,6 +133,7 @@ func (s *Safe) GetChainIdByCtx(ctx context.Context) int {
 
 func (s *Safe) safeWalletInfo(ctx context.Context) (*safe_api.SafeInfoResponse, error) {
 	var address = s.getOperatorSafeAddress().Hex()
+
 	resp, err := s.Client(ctx).Safes.V1SafesRead(&safes.V1SafesReadParams{Address: address}, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get %s safe info error", address)
@@ -226,9 +227,95 @@ func (s *Safe) nonce(ctx context.Context) (int64, error) {
 	return dest.RecommendedNonce, utils.Request(ctx, "GET", u, nil, &dest)
 }
 
+type TxList struct {
+	Count    int         `json:"count"`
+	Next     interface{} `json:"next"`
+	Previous interface{} `json:"previous"`
+	Results  []struct {
+		Safe                 string      `json:"safe"`
+		To                   string      `json:"to"`
+		Value                string      `json:"value"`
+		Data                 string      `json:"data"`
+		Operation            int         `json:"operation"`
+		GasToken             string      `json:"gasToken"`
+		SafeTxGas            int         `json:"safeTxGas"`
+		BaseGas              int         `json:"baseGas"`
+		GasPrice             string      `json:"gasPrice"`
+		RefundReceiver       string      `json:"refundReceiver"`
+		Nonce                int         `json:"nonce"`
+		ExecutionDate        interface{} `json:"executionDate"`
+		SubmissionDate       time.Time   `json:"submissionDate"`
+		Modified             time.Time   `json:"modified"`
+		BlockNumber          interface{} `json:"blockNumber"`
+		TransactionHash      interface{} `json:"transactionHash"`
+		SafeTxHash           string      `json:"safeTxHash"`
+		Proposer             string      `json:"proposer"`
+		ProposedByDelegate   interface{} `json:"proposedByDelegate"`
+		Executor             interface{} `json:"executor"`
+		IsExecuted           bool        `json:"isExecuted"`
+		IsSuccessful         interface{} `json:"isSuccessful"`
+		EthGasPrice          interface{} `json:"ethGasPrice"`
+		MaxFeePerGas         interface{} `json:"maxFeePerGas"`
+		MaxPriorityFeePerGas interface{} `json:"maxPriorityFeePerGas"`
+		GasUsed              interface{} `json:"gasUsed"`
+		Fee                  interface{} `json:"fee"`
+		Origin               string      `json:"origin"`
+		DataDecoded          struct {
+			Method     string `json:"method"`
+			Parameters []struct {
+				Name  string `json:"name"`
+				Type  string `json:"type"`
+				Value string `json:"value"`
+			} `json:"parameters"`
+		} `json:"dataDecoded"`
+		ConfirmationsRequired int `json:"confirmationsRequired"`
+		Confirmations         []struct {
+			Owner           string      `json:"owner"`
+			SubmissionDate  time.Time   `json:"submissionDate"`
+			TransactionHash interface{} `json:"transactionHash"`
+			Signature       string      `json:"signature"`
+			SignatureType   string      `json:"signatureType"`
+		} `json:"confirmations"`
+		Trusted    bool        `json:"trusted"`
+		Signatures interface{} `json:"signatures"`
+	} `json:"results"`
+	CountUniqueNonce int `json:"countUniqueNonce"`
+}
+
+func (s *Safe) TxIsInQueue(ctx context.Context, tx *types.LegacyTx) (string, error) {
+	u := fmt.Sprintf("https://%s/api/v1/safes/%s/multisig-transactions/?limit=100&ordering=-timestamp&executed=false",
+		s.GetDomainByCtx(ctx), s.getOperatorSafeAddress().Hex())
+	for {
+		var resp TxList
+		if err := utils.Request(ctx, "GET", u, nil, &resp); err != nil {
+			return "", errors.Wrapf(err, "get tx list error")
+		}
+		for _, v := range resp.Results {
+			if strings.EqualFold(v.Data, "0x"+common.Bytes2Hex(tx.Data)) &&
+				v.Value == tx.Value.String() {
+				return v.SafeTxHash, nil
+			}
+		}
+		if resp.Next != nil || cast.ToString(resp.Next) != "" {
+			u = cast.ToString(resp.Next)
+			continue
+		}
+		if resp.Next == nil || cast.ToString(resp.Next) == "" {
+			return "", nil
+		}
+	}
+}
+
 func (s *Safe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (common.Hash, error) {
 	safeGlobalLocker.Lock()
 	defer safeGlobalLocker.Unlock()
+	safeHash, err := s.TxIsInQueue(ctx, tx)
+	if err != nil {
+		return common.Hash{}, errors.Wrapf(err, "check tx in queue error")
+	}
+	if safeHash != "" {
+		return common.HexToHash(safeHash), nil
+	}
 	nonce, err := s.nonce(ctx)
 	if err != nil {
 		return common.Hash{}, errors.Wrap(err, "get nonce error")
@@ -239,7 +326,6 @@ func (s *Safe) proposeTransaction(ctx context.Context, tx *types.LegacyTx) (comm
 		Data:  common.Bytes2Hex(tx.Data),
 		Nonce: int(nonce),
 	}
-	//t.Data = fmt.Sprintf("0x%s", t.Data)
 	if tx.Value != nil {
 		t.Value = decimal.NewFromBigInt(tx.Value, 0)
 	}
@@ -332,7 +418,7 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 	if err != nil {
 		return errors.Wrap(err, "get abi error")
 	}
-	nonce, err := client.NonceAt(context.TODO(), s.GetAddress(true), nil)
+	nonce, err := client.NonceAt(context.TODO(), s.getOperatorAddress(), nil)
 	if err != nil {
 		return errors.Wrap(err, "get nonce error")
 	}
@@ -342,7 +428,7 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 	)
 
 	for _, v := range tx.Confirmations {
-		if strings.EqualFold(v.Owner, s.GetAddress(true).Hex()) {
+		if strings.EqualFold(v.Owner, s.getOperatorAddress().Hex()) {
 			hasSelf = true
 		}
 		signatures = append(signatures, strings.TrimPrefix(v.Signature, "0x"))
@@ -353,9 +439,9 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 		address := common.Bytes2Hex(common.LeftPadBytes(s.GetAddress(true).Bytes(), 32))
 		confriom := common.Bytes2Hex(common.LeftPadBytes(big.NewInt(1).Bytes(), 33))
 		signatureData = common.Hex2Bytes(fmt.Sprintf("%s%s", address, confriom))
-	} else {
+	} else if len(signatures) == 0 {
 		signatureData, err = chains.SignTypedData(s.eip712(ctx, tx), func(msg []byte) (sig []byte, err error) {
-			return chains.SignMsg(msg, s.conf.PrivateKey)
+			return chains.SignMsg(msg, s.conf.Operator.PrivateKey)
 		})
 		if err != nil {
 			return errors.Wrap(err, "sign error")
@@ -366,7 +452,7 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 		return errors.New("not enough signatures")
 	}
 
-	if len(signatures) < tx.ConfirmationsRequired {
+	if len(signatures) < tx.ConfirmationsRequired && len(signatureData) > 0 {
 		signatures = append(signatures, common.Bytes2Hex(signatureData))
 	}
 
@@ -393,7 +479,7 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 		return errors.Wrap(err, "suggest gas price error")
 	}
 	gas, err := client.EstimateGas(context.TODO(), ethereum.CallMsg{
-		From:     s.GetAddress(true),
+		From:     s.getOperatorAddress(),
 		To:       &tx.Safe,
 		GasPrice: gasPrice,
 		Data:     input,
@@ -409,11 +495,15 @@ func (s *Safe) ExecTransaction(ctx context.Context, tx Transaction, client simul
 		Data:     input,
 	})
 
-	signTx, err := chains.SignTx(chainTransaction, s.conf.PrivateKey, int64(s.GetChainIdByCtx(ctx)))
+	signTx, err := chains.SignTx(chainTransaction, s.conf.Operator.PrivateKey, int64(s.GetChainIdByCtx(ctx)))
 	if err != nil {
 		return errors.Wrap(err, "sign tx error")
 	}
-	return client.SendTransaction(ctx, signTx)
+	err = client.SendTransaction(ctx, signTx)
+	if err != nil {
+		return errors.Wrap(err, "send tx error")
+	}
+	return nil
 }
 
 func (s *Safe) eip712(ctx context.Context, t Transaction) apitypes.TypedData {
